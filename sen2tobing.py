@@ -314,7 +314,7 @@ def main():
     parser.add_argument('--width', type=float, help='Width in meters')
     parser.add_argument('--height', type=float, help='Height in meters')
     parser.add_argument('--resolution', type=float, default=0.75, help='Resolution in meters per pixel (default: 0.75)')
-    parser.add_argument('--output', type=str, default='output.tif', help='Output GeoTIFF path')
+    parser.add_argument('--output', type=str, default='/data_img/data_prep/Ref.tif', help='Output GeoTIFF path')
     parser.add_argument('--input_tif_reference', type=str, help='Reference GeoTIFF for area and resolution')
     
     args = parser.parse_args()
@@ -340,3 +340,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
