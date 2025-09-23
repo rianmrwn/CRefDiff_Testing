@@ -14,7 +14,7 @@ def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description='Tile a HR TIF file into smaller tiles')
     parser.add_argument('--input', type=str, required=True, help='Path to input HR TIF file')
-    parser.add_argument('--output_folder', type=str, required=True, help='Path to output folder for tiles')
+    parser.add_argument('--output_folder', type=str, default='/data_img/HR/', required=True, help='Path to output folder for tiles')
     parser.add_argument('--tile_size', type=int, default=48, help='Tile size in pixels (default: 256)')
     
     return parser.parse_args()
@@ -139,4 +139,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
