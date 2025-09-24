@@ -20,18 +20,18 @@ def parse_args() -> Namespace:
     # TODO: add help info for these options
     parser.add_argument(
         "--ckpt",
-        default="step=372999-val_psnr=20.864.ckpt",
+        default="data.ckpt",
         type=str,
         help="full checkpoint path",
     )
     parser.add_argument(
         "--config",
-        default="configs/model/refsr_dino.yaml",
+        default="/content/CRefDiff_Testing/configs/model/refsr_dino.yaml",
         type=str,
         help="model config path",
     )
     parser.add_argument(
-        "--val_config", type=str, default="configs/dataset/reference_sr_test.yaml"
+        "--val_config", type=str, default="/content/CRefDiff_Testing/configs/dataset/reference_sr_val.yaml"
     )
     parser.add_argument(
         "--output",
