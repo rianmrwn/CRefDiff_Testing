@@ -281,8 +281,8 @@ def process_sentinel2_batch(input_folder, output_folder=None, target_size=(800, 
 
 if __name__ == "__main__":
     # Example usage
-    input_folder = "/data_img/temp_lr/"  # Replace with your folder path
-    output_folder = "/data_img/LR/"           # Replace with your output folder
+    input_folder = "/content/CRefDiff_Testing/data_img/sentinel_tiles"    # Replace with your folder path
+    output_folder = "/content/CRefDiff_Testing/data_img/LR"               # Replace with your output folder
     
     # Process all Sentinel-2 images in the folder
     processor, results = process_sentinel2_batch(
@@ -292,3 +292,4 @@ if __name__ == "__main__":
     )
     
     print("\nBatch processing completed!")
+
