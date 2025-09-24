@@ -124,5 +124,6 @@ This project is based on [DiffBIR](https://github.com/XPixelGroup/DiffBIR). We t
 
 ## <a name="contact"></a>📨 Contact
 
+https://colab.research.google.com/drive/1EOZrHRWwBaJn6nlWH8MlhFqFimB1lvJe?usp=sharing
 If you have any questions, feel free to reach out to:
 **Ce Wang** — [cewang@whu.edu.cn](mailto:cewang@whu.edu.cn)
