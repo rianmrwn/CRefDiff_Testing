@@ -2,11 +2,11 @@ dataset:
   target: dataset.LRHRRef.LRHRRefDataset
   params:
     # Path to the file list.
-    dataroot_hr: /mnt/massive/wangce/RefSR_x10/dataset/All_2/val/HR
-    dataroot_lr: /mnt/massive/wangce/RefSR_x10/dataset/All_2/val/LR_Ux10
-    dataroot_ref: /mnt/massive/wangce/RefSR_x10/dataset/All_2/val/Ref
+    dataroot_hr: /content/CRefDiff_Testing/data_img/hr_tiles
+    dataroot_lr: /content/CRefDiff_Testing/data_img/LR
+    dataroot_ref: /content/CRefDiff_Testing/data_img/ref_tiles
     split: "val"
-    data_len: 172
+    data_len: 182
     use_ColorJitter: false
     gt_as_ref: false
 
