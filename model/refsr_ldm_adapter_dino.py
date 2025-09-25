@@ -16,7 +16,7 @@ from ldm.models.diffusion.ddpm import LatentDiffusion
 from model.modules import ImplicitPromptModule
 from .spaced_sampler import SpacedSampler
 from img_utils.metrics import LPIPS
-from .adapters import Spade_Adapter, LCA_Adapter, Cat_Adapter
+from model.adapters import LCA_Adapter
 
 
 # Do forward process for UNetModel with prepared "control" tensors
