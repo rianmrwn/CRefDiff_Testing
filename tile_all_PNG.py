@@ -126,7 +126,7 @@ def parse_arguments():
     parser.add_argument('--sentinel_input', type=str, help='Path to input Sentinel-2 TIF file')
     
     # Output folders
-    parser.add_argument('--output_base', type=str, required=True, help='Base output directory for all tiles')
+    parser.add_argument('--output_base', type=str, default='./data_img', help='Base output directory for all tiles')
     
     # Optional tile sizes
     parser.add_argument('--hr_tile_size', type=int, help='Tile size for HR image (default: 800)')
