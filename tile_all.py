@@ -1,9 +1,10 @@
-# combined_tile_processing.py
+#!/usr/bin/env python3
 
 import os
 import argparse
 import numpy as np
-from osgeo import gdal
+import rasterio
+from rasterio.windows import Window
 import sys
 from enum import Enum
 
@@ -34,45 +35,39 @@ class TileProcessor:
         # Create output directory if it doesn't exist
         os.makedirs(self.output_folder, exist_ok=True)
         
-        # Open the input file
-        dataset = gdal.Open(self.input_path)
-        if dataset is None:
+        try:
+            with rasterio.open(self.input_path) as src:
+                # Get image dimensions
+                width = src.width
+                height = src.height
+                bands = src.count
+                
+                # Get metadata
+                profile = src.profile
+                
+                # Calculate the number of tiles
+                num_tiles_x = int(np.ceil(width / self.tile_size))
+                num_tiles_y = int(np.ceil(height / self.tile_size))
+                
+                print(f"\nProcessing {self.image_type.value.upper()} image:")
+                print(f"Image size: {width}x{height} pixels, {bands} bands")
+                print(f"Creating {num_tiles_x}x{num_tiles_y} tiles of size {self.tile_size}x{self.tile_size}")
+                
+                # Get input filename without extension
+                base_filename = os.path.splitext(os.path.basename(self.input_path))[0]
+                
+                # Create tiles
+                for i in range(num_tiles_x):
+                    for j in range(num_tiles_y):
+                        self._process_single_tile(src, base_filename, i, j, width, height, profile)
+                
+                return True
+                
+        except rasterio.errors.RasterioIOError:
             print(f"Error: Could not open {self.input_path}")
             return False
-        
-        try:
-            # Get image dimensions
-            width = dataset.RasterXSize
-            height = dataset.RasterYSize
-            bands = dataset.RasterCount
-            
-            # Get geotransform and projection
-            geotransform = dataset.GetGeoTransform()
-            projection = dataset.GetProjection()
-            
-            # Calculate the number of tiles
-            num_tiles_x = int(np.ceil(width / self.tile_size))
-            num_tiles_y = int(np.ceil(height / self.tile_size))
-            
-            print(f"\nProcessing {self.image_type.value.upper()} image:")
-            print(f"Image size: {width}x{height} pixels, {bands} bands")
-            print(f"Creating {num_tiles_x}x{num_tiles_y} tiles of size {self.tile_size}x{self.tile_size}")
-            
-            # Get input filename without extension
-            base_filename = os.path.splitext(os.path.basename(self.input_path))[0]
-            
-            # Create tiles
-            for i in range(num_tiles_x):
-                for j in range(num_tiles_y):
-                    self._process_single_tile(dataset, base_filename, i, j, width, height, bands, geotransform, projection)
-            
-            return True
-            
-        finally:
-            # Close the input dataset
-            dataset = None
 
-    def _process_single_tile(self, dataset, base_filename, i, j, width, height, bands, geotransform, projection):
+    def _process_single_tile(self, src, base_filename, i, j, width, height, profile):
         """Process a single tile"""
         # Calculate pixel coordinates
         x_offset = i * self.tile_size
@@ -90,32 +85,26 @@ class TileProcessor:
         output_filename = f"{base_filename}_{self.image_type.value}_tile_{i}_{j}.tif"
         output_path = os.path.join(self.output_folder, output_filename)
         
-        # Calculate new geotransform for this tile
-        new_geotransform = list(geotransform)
-        new_geotransform[0] = geotransform[0] + x_offset * geotransform[1]
-        new_geotransform[3] = geotransform[3] + y_offset * geotransform[5]
+        # Create a window for reading the data
+        window = Window(x_offset, y_offset, x_size, y_size)
         
-        # Create the output file
-        driver = gdal.GetDriverByName('GTiff')
-        output_dataset = driver.Create(
-            output_path, 
-            x_size, 
-            y_size, 
-            bands, 
-            gdal.GDT_Float32
-        )
+        # Update the transform for the tile
+        transform = rasterio.windows.transform(window, src.transform)
         
-        # Set the geotransform and projection
-        output_dataset.SetGeoTransform(new_geotransform)
-        output_dataset.SetProjection(projection)
+        # Update profile for the output file
+        profile_output = profile.copy()
+        profile_output.update({
+            'height': y_size,
+            'width': x_size,
+            'transform': transform
+        })
         
-        # Copy the data for each band
-        for band in range(1, bands + 1):
-            data = dataset.GetRasterBand(band).ReadAsArray(x_offset, y_offset, x_size, y_size)
-            output_dataset.GetRasterBand(band).WriteArray(data)
+        # Read the data for all bands
+        data = src.read(window=window)
         
-        # Close the dataset
-        output_dataset = None
+        # Write the tile
+        with rasterio.open(output_path, 'w', **profile_output) as dst:
+            dst.write(data)
         
         print(f"Created tile: {output_filename}")
 
@@ -176,9 +165,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# python combined_tile_processing.py \
-#     --hr_input /path/to/hr.tif \
-#     --ref_input /path/to/ref.tif \
-#     --sentinel_input /path/to/sentinel.tif \
-#     --output_base /path/to/output/directory
