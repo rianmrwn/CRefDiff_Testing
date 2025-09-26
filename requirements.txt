@@ -19,3 +19,5 @@ facexlib
 normflows
 pyiqa
 numpy==1.26.4
+rasterio
+pyproj
