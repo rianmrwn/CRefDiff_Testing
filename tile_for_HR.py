@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """
 Script to tile a single HR TIF file into smaller tiles.
+(rasterio version)
 """
 
 import os
 import argparse
 import numpy as np
+import sys
+
 import rasterio
 from rasterio.windows import Window
-import sys
+from rasterio.windows import transform as window_transform
 
 
 def parse_arguments():
@@ -34,67 +37,79 @@ def create_tiles(input_path, output_folder, tile_size):
     os.makedirs(output_folder, exist_ok=True)
     
     # Open the input file
-    with rasterio.open(input_path) as src:
-        # Get image dimensions
-        width = src.width
-        height = src.height
-        bands = src.count
-        
-        # Get metadata
-        profile = src.profile
-        
-        # Calculate the number of tiles
-        num_tiles_x = int(np.ceil(width / tile_size))
-        num_tiles_y = int(np.ceil(height / tile_size))
-        
-        print(f"Image size: {width}x{height} pixels, {bands} bands")
-        print(f"Creating {num_tiles_x}x{num_tiles_y} tiles of size {tile_size}x{tile_size}")
-        
-        # Get input filename without extension
-        base_filename = os.path.splitext(os.path.basename(input_path))[0]
-        
-        # Create tiles
-        for i in range(num_tiles_x):
-            for j in range(num_tiles_y):
-                # Calculate pixel coordinates
-                x_offset = i * tile_size
-                y_offset = j * tile_size
-                
-                # Handle edge cases where tile would go beyond image boundaries
-                x_size = min(tile_size, width - x_offset)
-                y_size = min(tile_size, height - y_offset)
-                
-                # Skip if tile size is 0 in any dimension
-                if x_size <= 0 or y_size <= 0:
-                    continue
-                
-                # Create output filename
-                output_filename = f"{base_filename}_tile_{i}_{j}.tif"
-                output_path = os.path.join(output_folder, output_filename)
-                
-                # Create a window for reading the data
-                window = Window(x_offset, y_offset, x_size, y_size)
-                
-                # Update the transform for the tile
-                transform = rasterio.windows.transform(window, src.transform)
-                
-                # Update profile for the output file
-                profile_output = profile.copy()
-                profile_output.update({
-                    'height': y_size,
-                    'width': x_size,
-                    'transform': transform
-                })
-                
-                # Read the data for all bands
-                data = src.read(window=window)
-                
-                # Write the tile
-                with rasterio.open(output_path, 'w', **profile_output) as dst:
-                    dst.write(data)
-                
-                print(f"Created tile: {output_filename}")
+    try:
+        dataset = rasterio.open(input_path)
+    except Exception as e:
+        print(f"Error: Could not open {input_path}: {e}")
+        return False
     
+    # Get image dimensions
+    width = dataset.width
+    height = dataset.height
+    bands = dataset.count
+    
+    # Get transform and CRS
+    transform = dataset.transform
+    crs = dataset.crs
+    
+    # Calculate the number of tiles
+    num_tiles_x = int(np.ceil(width / tile_size))
+    num_tiles_y = int(np.ceil(height / tile_size))
+    
+    print(f"Image size: {width}x{height} pixels, {bands} bands")
+    print(f"Creating {num_tiles_x}x{num_tiles_y} tiles of size {tile_size}x{tile_size}")
+    
+    # Get input filename without extension
+    base_filename = os.path.splitext(os.path.basename(input_path))[0]
+    
+    # Use source dtype for output tiles (fallback to float32 if unknown)
+    out_dtype = dataset.dtypes[0] if dataset.dtypes and dataset.dtypes[0] else 'float32'
+    
+    # Create tiles
+    for i in range(num_tiles_x):
+        for j in range(num_tiles_y):
+            # Calculate pixel coordinates
+            x_offset = i * tile_size
+            y_offset = j * tile_size
+            
+            # Handle edge cases where tile would go beyond image boundaries
+            x_size = min(tile_size, width - x_offset)
+            y_size = min(tile_size, height - y_offset)
+            
+            # Skip if tile size is 0 in any dimension
+            if x_size <= 0 or y_size <= 0:
+                continue
+            
+            # Create output filename
+            output_filename = f"{base_filename}_tile_{i}_{j}.tif"
+            output_path = os.path.join(output_folder, output_filename)
+            
+            # Define window and its transform
+            window = Window(x_offset, y_offset, x_size, y_size)
+            new_transform = window_transform(window, transform)
+            
+            # Prepare output profile
+            profile = dataset.profile.copy()
+            profile.update({
+                "width": x_size,
+                "height": y_size,
+                "count": bands,
+                "dtype": out_dtype,
+                "transform": new_transform,
+                "crs": crs,
+                "driver": "GTiff"
+            })
+            
+            # Write the tile
+            with rasterio.open(output_path, "w", **profile) as dst:
+                for band in range(1, bands + 1):
+                    data = dataset.read(band, window=window)
+                    dst.write(data, band)
+            
+            print(f"Created tile: {output_filename}")
+    
+    # Close the input dataset
+    dataset.close()
     return True
 
 
