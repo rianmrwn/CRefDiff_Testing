@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
 Script to tile a single Sentinel-2 TIF file into smaller tiles.
+(rasterio version)
 """
 
 import os
 import argparse
 import numpy as np
-from osgeo import gdal
 import sys
+
+import rasterio
+from rasterio.windows import Window
+from rasterio.windows import transform as window_transform
 
 
 def parse_arguments():
@@ -33,19 +37,20 @@ def create_tiles(input_path, output_folder, tile_size):
     os.makedirs(output_folder, exist_ok=True)
     
     # Open the input file
-    dataset = gdal.Open(input_path)
-    if dataset is None:
-        print(f"Error: Could not open {input_path}")
+    try:
+        dataset = rasterio.open(input_path)
+    except Exception as e:
+        print(f"Error: Could not open {input_path}: {e}")
         return False
-    
+
     # Get image dimensions
-    width = dataset.RasterXSize
-    height = dataset.RasterYSize
-    bands = dataset.RasterCount
+    width = dataset.width
+    height = dataset.height
+    bands = dataset.count
     
-    # Get geotransform and projection
-    geotransform = dataset.GetGeoTransform()
-    projection = dataset.GetProjection()
+    # Get transform and CRS (projection)
+    transform = dataset.transform
+    crs = dataset.crs
     
     # Calculate the number of tiles
     num_tiles_x = int(np.ceil(width / tile_size))
@@ -56,6 +61,9 @@ def create_tiles(input_path, output_folder, tile_size):
     
     # Get input filename without extension
     base_filename = os.path.splitext(os.path.basename(input_path))[0]
+
+    # Use source dtype for output tiles
+    out_dtype = dataset.dtypes[0] if dataset.dtypes and dataset.dtypes[0] is not None else 'float32'
     
     # Create tiles
     for i in range(num_tiles_x):
@@ -76,39 +84,33 @@ def create_tiles(input_path, output_folder, tile_size):
             output_filename = f"{base_filename}_tile_{i}_{j}.tif"
             output_path = os.path.join(output_folder, output_filename)
             
-            # Calculate new geotransform for this tile
-            new_geotransform = list(geotransform)
-            new_geotransform[0] = geotransform[0] + x_offset * geotransform[1]
-            new_geotransform[3] = geotransform[3] + y_offset * geotransform[5]
+            # Define window and its transform
+            window = Window(x_offset, y_offset, x_size, y_size)
+            new_transform = window_transform(window, transform)
             
-            # Create the output file
-            driver = gdal.GetDriverByName('GTiff')
-            output_dataset = driver.Create(
-                output_path, 
-                x_size, 
-                y_size, 
-                bands, 
-                gdal.GDT_Float32
-            )
+            # Prepare output profile
+            profile = dataset.profile.copy()
+            profile.update({
+                "width": x_size,
+                "height": y_size,
+                "count": bands,
+                "dtype": out_dtype,
+                "transform": new_transform,
+                "crs": crs,
+                "driver": "GTiff"
+            })
             
-            # Set the geotransform and projection
-            output_dataset.SetGeoTransform(new_geotransform)
-            output_dataset.SetProjection(projection)
-            
-            # Copy the data for each band
-            for band in range(1, bands + 1):
-                data = dataset.GetRasterBand(band).ReadAsArray(x_offset, y_offset, x_size, y_size)
-                output_dataset.GetRasterBand(band).WriteArray(data)
-            
-            # Close the dataset
-            output_dataset = None
+            # Write the tile
+            with rasterio.open(output_path, "w", **profile) as dst:
+                for band in range(1, bands + 1):
+                    data = dataset.read(band, window=window)
+                    dst.write(data, band)
             
             print(f"Created tile: {output_filename}")
     
     # Close the input dataset
-    dataset = None
+    dataset.close()
     return True
-
 
 def main():
     """Main function"""
@@ -136,7 +138,6 @@ def main():
     else:
         print("Tiling failed")
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
