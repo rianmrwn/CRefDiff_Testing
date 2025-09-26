@@ -23,8 +23,8 @@ class TileProcessor:
         
         # Set default tile sizes based on image type
         self.default_sizes = {
-            ImageType.HR: 800,
-            ImageType.REF: 800,
+            ImageType.HR: 480,
+            ImageType.REF: 480,
             ImageType.SENTINEL: 48
         }
         
@@ -80,7 +80,7 @@ class TileProcessor:
             return
         
         # Create output filename (PNG instead of TIF)
-        output_filename = f"{base_filename}_{self.image_type.value}_tile_{i}_{j}.png"
+        output_filename = f"tile_{i}_{j}.png"
         output_path = os.path.join(self.output_folder, output_filename)
         
         # Create a window for reading the data
