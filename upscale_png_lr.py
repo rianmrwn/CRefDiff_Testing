@@ -84,8 +84,27 @@ class BatchUpscaleProcessor:
                     print(f"  Error: {error}")
                     continue
                 
-                # Define output path
-                output_path = self.output_folder / f"upscaled_{file_path.stem}_{target_size[0]}x{target_size[1]}.png"
+                # Parse tile coordinates from filename if it follows the pattern "tile_X_Y.png"
+                filename = file_path.name
+                tile_coords = None
+                
+                if filename.startswith("tile_") and filename.endswith(".png"):
+                    try:
+                        # Extract coordinates from filename (tile_X_Y.png)
+                        parts = filename.replace(".png", "").split("_")
+                        if len(parts) >= 3:
+                            tile_coords = (int(parts[1]), int(parts[2]))
+                    except (ValueError, IndexError):
+                        pass
+                
+                # Define output path using tile coordinates if available
+                if tile_coords:
+                    output_filename = f"tile_{tile_coords[0]}_{tile_coords[1]}.png"
+                else:
+                    # If the filename doesn't match the tile pattern, use a sequential index
+                    output_filename = f"tile_{i-1}_0.png"
+                
+                output_path = self.output_folder / output_filename
                 
                 # Read image using OpenCV
                 img = cv2.imread(str(file_path))
