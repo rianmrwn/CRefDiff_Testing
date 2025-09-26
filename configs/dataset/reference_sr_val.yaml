@@ -4,7 +4,7 @@ dataset:
     # Path to the file list.
     dataroot_hr: /content/CRefDiff_Testing/data_img/hr_tiles
     dataroot_lr: /content/CRefDiff_Testing/data_img/LR
-    dataroot_ref: /content/CRefDiff_Testing/data_img/ref_tiles
+    dataroot_ref: /content/CRefDiff_Testing/data_img/hr_tiles
     split: "val"
     data_len: 182
     use_ColorJitter: false
