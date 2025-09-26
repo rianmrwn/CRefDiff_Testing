@@ -75,7 +75,7 @@ def create_tiles(input_path, output_folder, tile_size):
                 continue
 
             # Create output filename
-            output_filename = f"{base_filename}_tile_{i}_{j}.tif"
+            output_filename = f"tile_{i}_{j}.png"
             output_path = os.path.join(output_folder, output_filename)
 
             # Define window and its transform
