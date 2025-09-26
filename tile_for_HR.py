@@ -19,7 +19,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Tile a HR TIF file into smaller tiles')
     parser.add_argument('--input', type=str, required=True, help='Path to input HR TIF file')
     parser.add_argument('--output_folder', type=str, default='/data_img/HR/', help='Path to output folder for tiles')
-    parser.add_argument('--tile_size', type=int, default=800, help='Tile size in pixels (default: 800)')
+    parser.add_argument('--tile_size', type=int, default=480, help='Tile size in pixels (default: 800)')
     
     return parser.parse_args()
 
@@ -81,7 +81,7 @@ def create_tiles(input_path, output_folder, tile_size):
                 continue
             
             # Create output filename
-            output_filename = f"{base_filename}_tile_{i}_{j}.tif"
+            output_filename = f"tile_{i}_{j}.png"
             output_path = os.path.join(output_folder, output_filename)
             
             # Define window and its transform
